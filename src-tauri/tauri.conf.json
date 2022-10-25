@@ -12,7 +12,16 @@
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "clipboard": {
+        "all": false,
+        "writeText": true
+      },
+      "shell": {
+        "all": true,
+        "execute": true,
+        "sidecar": true,
+        "open": true
+      }
     },
     "bundle": {
       "active": true,
@@ -27,9 +36,10 @@
         "icons/128x128.png",
         "icons/128x128@2x.png",
         "icons/icon.icns",
+        "icons/icon.png",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "top.isayme.imi",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
