@@ -9,8 +9,13 @@
       >
       </a-input-password>
 
-      <a-input size="large" placeholder="salt domain" v-model:value="salt">
-      </a-input>
+      <a-auto-complete
+        size="large"
+        placeholder="salt domain"
+        v-model:value="salt"
+        :options="saltOptions"
+        :filter-option="filterSaltOption"
+      />
 
       <a-input-group>
         <a-input-password
@@ -30,9 +35,12 @@
 </template>
 
 <script>
-import md5 from "blueimp-md5";
-import { writeText } from "@tauri-apps/api/clipboard";
 import { CopyOutlined } from "@ant-design/icons-vue";
+import { writeText } from "@tauri-apps/api/clipboard";
+import md5 from "blueimp-md5";
+
+const MAX_SALT_HISTORY_COUNT = 4;
+const LS_SALT_HISTORY_KEY = "saltHistory";
 
 function generate(password, salt) {
   if (!password || !salt) {
@@ -69,11 +77,25 @@ export default {
   data() {
     return {
       oldpassword: "",
+      saltOptions: [],
       salt: "",
     };
   },
   components: {
     CopyOutlined,
+  },
+  mounted: function () {
+    const saltHistory = localStorage.getItem(LS_SALT_HISTORY_KEY);
+    if (!!saltHistory) {
+      try {
+        this.saltOptions = JSON.parse(saltHistory);
+        if (this.saltOptions.length > 0) {
+          this.salt = this.saltOptions[0].value;
+        }
+      } catch (e) {
+        // do nothing
+      }
+    }
   },
   methods: {
     doCopy: function () {
@@ -84,11 +106,30 @@ export default {
 
       writeText(this.newpassword).then(
         () => {
+          this.addSaltOption(this.salt);
           this.$message.success("复制成功");
         },
         (err) => {
           this.$message.error(`复制失败: ${err}`);
         }
+      );
+    },
+    filterSaltOption: function (input, option) {
+      return option.value.indexOf(input) >= 0;
+    },
+    addSaltOption: function (value) {
+      let saltOptions = this.saltOptions.filter((option) => {
+        return option.value !== value;
+      });
+      saltOptions.unshift({ value });
+      if (saltOptions.length > MAX_SALT_HISTORY_COUNT) {
+        saltOptions = saltOptions.slice(0, MAX_SALT_HISTORY_COUNT);
+      }
+
+      this.saltOptions = saltOptions;
+      localStorage.setItem(
+        LS_SALT_HISTORY_KEY,
+        JSON.stringify(this.saltOptions)
       );
     },
   },
@@ -101,7 +142,10 @@ export default {
 </script>
 
 <style scoped>
-span {
+span,
+.ant-select {
+  width: 100%;
+  text-align: left;
   margin: 0.67em auto;
 }
 </style>
